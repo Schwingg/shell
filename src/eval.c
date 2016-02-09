@@ -28,8 +28,11 @@ void eval(char *cmdline)
 
         if (!bg) { // le pere attend fin du travail de premier plan
             int status;
+            printf("dans !bg\n");
             if (waitpid(pid, &status, 0) < 0)
                 unix_error("waitfg: waitpid error");
+            
+            
         }
         else       // travail d'arriere-plan, on imprime le pid
             printf("%d %s", pid, cmdline);
@@ -45,5 +48,35 @@ int builtin_command(char **argv)
         exit(0);
     if (!strcmp(argv[0], "&"))    // ignorer & tout seul
         return 1;
+    
+    if (!strcmp(argv[0], "jobs")){    // ignorer & tout seul
+        
+        printf("dans jobs\n");
+        
+        return 1;
+    }
+    
+    if (!strcmp(argv[0], "bg")){    // ignorer & tout seul
+        
+        printf("dans bg\n");
+        
+        return 1;
+    }
+    
+    if (!strcmp(argv[0], "fg")){    // ignorer & tout seul
+        
+        printf("dans fg\n");
+        
+        return 1;
+    }
+    
+    if (!strcmp(argv[0], "stp")){    // ignorer & tout seul
+        
+        printf("dans stp\n");
+        
+        return 1;
+    }
+    
+    
     return 0;                     // ce n'est pas une commande integree
 }
