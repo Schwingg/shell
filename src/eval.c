@@ -5,13 +5,24 @@
 int parseline(char *buf, char **argv);
 int builtin_command(char **argv);
 
+int getIndexLibre(){
+    int i=0;
+    for(i=0;i<10;i++)
+        if(tabJobs[i] == NULL)
+            return i;
+    return -1;
+}
+
+
 void eval(char *cmdline)
 {
     char *argv[MAXARGS]; // argv pour execve()
     char buf[MAXLINE];   // contient ligne commande modifiee
     int bg;              // arriere-plan ou premier plan ?
     pid_t pid;           // process id
-
+    
+    int indexJobLibre;
+    
     strcpy(buf, cmdline);
     bg = parseline(buf, argv);
     if (argv[0] == NULL)
@@ -19,7 +30,12 @@ void eval(char *cmdline)
 
     if (!builtin_command(argv)) {    // commande integree ?
         // si oui, executee directement
-        if ((pid = Fork()) == 0) {   // si non, executee par un fils
+        if ((pid = Fork()) == 0) {      // si non, executee par un fils
+            
+            indexJobLibre = getIndexLibre();
+                    //malloc(sizeof(job));
+            printf("indexmachin = %d\n",indexJobLibre);
+            
             if (execve(argv[0], argv, environ) < 0) {
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
@@ -31,7 +47,7 @@ void eval(char *cmdline)
             printf("dans !bg\n");
             if (waitpid(pid, &status, 0) < 0)
                 unix_error("waitfg: waitpid error");
-            
+            printf("fin attente pid\n");
             
         }
         else       // travail d'arriere-plan, on imprime le pid
