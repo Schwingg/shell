@@ -5,7 +5,9 @@
 enum etat {PAUSE, FG, BG};
 
 int getIndexLibre();
-int getPidFG();
+int getIndexFG();
+
+void afficheJob(int index);
 
 typedef struct job{
 
