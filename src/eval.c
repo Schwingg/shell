@@ -7,12 +7,27 @@ int builtin_command(char **argv);
 
 int getIndexLibre(){
     int i=0;
-    for(i=0;i<10;i++)
+    for(i=0;i<MAXJOBS;i++)
         if(tabJobs[i] == NULL)
             return i;
     return -1;
 }
 
+int getPidFG(){
+    int i=0;
+    for(i=0;i<MAXJOBS;i++)
+        if(tabJobs[i] != NULL)
+            if(tabJobs[i]->etat == FG)
+                return tabJobs[i]->pid;
+    return -1;
+}
+
+
+
+void afficheJob(int index){
+    if(tabJobs[index] != NULL)
+        printf("[%d] %s %s\n", index, tabJobs[index]->etat == PAUSE ? "Pause" : "En cours d'execution", tabJobs[index]->commande );
+}
 
 void eval(char *cmdline)
 {
@@ -33,7 +48,14 @@ void eval(char *cmdline)
         if ((pid = Fork()) == 0) {      // si non, executee par un fils
             
             indexJobLibre = getIndexLibre();
-                    //malloc(sizeof(job));
+            tabJobs[indexJobLibre] =  malloc(sizeof(job));
+            tabJobs[indexJobLibre]->pid = pid;
+            tabJobs[indexJobLibre]->commande = argv[0];
+            if(!bg)
+                tabJobs[indexJobLibre]->etat = FG;
+            else
+                tabJobs[indexJobLibre]->etat = BG;
+            
             printf("indexmachin = %d\n",indexJobLibre);
             
             if (execve(argv[0], argv, environ) < 0) {
@@ -50,8 +72,10 @@ void eval(char *cmdline)
             printf("fin attente pid\n");
             
         }
-        else       // travail d'arriere-plan, on imprime le pid
+        else{       // travail d'arriere-plan, on imprime le pid
             printf("%d %s", pid, cmdline);
+            
+        }
     }
     return;
 }
@@ -67,7 +91,12 @@ int builtin_command(char **argv)
     
     if (!strcmp(argv[0], "jobs")){    // ignorer & tout seul
         
-        printf("dans jobs\n");
+        printf("jobs\n");
+        int i;
+        for(i=0;i<MAXJOBS;i++){
+                afficheJob(i);
+            }
+        
         
         return 1;
     }
