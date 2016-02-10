@@ -1,18 +1,21 @@
 #include "csapp.h"
 #define MAXARGS 128
+#define MAXJOBS 10
 
+enum etat {PAUSE, FG, BG};
+
+int getIndexLibre();
+int getPidFG();
 
 typedef struct job{
-    // 0: arreté
-    // 1: foreground
-    // 2: background
-    int etat; 
+
+    enum etat etat; 
     char* commande;
     int pid;
 
 }job;
 
-job* tabJobs[10];
+job* tabJobs[MAXJOBS];
 
 
 
