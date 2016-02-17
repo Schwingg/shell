@@ -90,6 +90,26 @@ int checkRunningJob() {
     return 0;
 }
 
+
+int getIndex(char* argv){
+    
+    int index;
+    if (argv[0] == '%') {
+        // c'est un jobs
+        printf("c'est un jobs => %s\n", argv + sizeof (char));
+        index = atoi(argv + sizeof (char));
+        if(index < 0 || index >= MAXJOBS) return -1;
+        if(tabJobs[index] == NULL) return -1;
+        
+        return index;
+    } else {
+        // c'est un pid
+        printf("c'est un pid => %s\n", argv);
+        return getIndexJob(atoi(argv));
+    }
+}
+
+
 void eval(char *cmdline) {
     char *argv[MAXARGS]; // argv pour execve()
     char buf[MAXLINE]; // contient ligne commande modifiee
@@ -164,17 +184,14 @@ int builtin_command(char **argv) {
     if (!strcmp(argv[0], "bg")) { // ignorer & tout seul
 
         printf("dans bg\n");
-        if (argv[1][0] == '%') {
-            // c'est un jobs
-            printf("c'est un jobs => %s", argv[1] + sizeof (char));
-        } else {
-            // c'est un pid
-            printf("c'est un pid => %s", argv[1]);
+        
+        int index = getIndex(argv[1]);
+        
+        if(index == -1){
+            printf("Erreur bg: job non trouvé\n");
+            return 1;
         }
-
-
-        int index = atoi(argv[1]);
-
+        
         tabJobs[index]->etat = BG;
         kill(tabJobs[index]->pid, SIGCONT);
         return 1;
@@ -183,7 +200,14 @@ int builtin_command(char **argv) {
     if (!strcmp(argv[0], "fg")) { // ignorer & tout seul
 
         printf("dans fg\n");
-        int index = atoi(argv[1]);
+        
+        int index = getIndex(argv[1]);
+        
+        if(index == -1){
+            printf("Erreur fg: job non trouvé\n");
+            return 1;
+        }
+        
         tabJobs[index]->etat = FG;
         kill(tabJobs[index]->pid, SIGCONT);
         return 1;
@@ -193,7 +217,14 @@ int builtin_command(char **argv) {
     if (!strcmp(argv[0], "stop")) { // ignorer & tout seul
 
         printf("dans stop\n");
-        int index = atoi(argv[1]);
+        
+        int index = getIndex(argv[1]);
+        
+        if(index == -1){
+            printf("Erreur stop: job non trouvé\n");
+            return 1;
+        }        
+        
         tabJobs[index]->etat = PAUSE;
         kill(tabJobs[index]->pid, SIGTSTP);
         return 1;
