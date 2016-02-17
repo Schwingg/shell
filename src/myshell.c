@@ -27,7 +27,7 @@ void handlerTSTP(int sig) {
 }
 
 void handlerCHLD(int sig) {
-    printf("\n\ndans le handlerCHLD %d pid: %d!\n", sig, getpid());
+    printf("\n\ndans le handlerCHLD %d!\n", sig);
 
     int status;
     int i;
@@ -40,7 +40,10 @@ void handlerCHLD(int sig) {
             printf("Dans IF processus non trouve: %d\n",tabJobs[i]->pid);
             continue;
         }
-
+        if(WIFSIGNALED(status)){
+            printf("Dans ELSE Terminé a cause d'un signal: %d\n",tabJobs[i]->pid);
+            rmJob(tabJobs[i]->pid);
+        }
 
         if (WIFEXITED(status)) { // terminé normalement
             printf("Dans ELSE Terminé normalement: %d\n",tabJobs[i]->pid);
@@ -60,9 +63,12 @@ void handlerCHLD(int sig) {
 
 void handlerINT(int sig) {
 
+    printf("debut handlerINT\n");
+    int i = getIndexFG();
+    if(i != -1){
+        kill(-tabJobs[i]->pid, SIGKILL);
+    }
     printf("fin handlerINT\n");
-    exit(0);
-
 }
 
 int main() {
