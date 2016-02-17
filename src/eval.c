@@ -7,7 +7,6 @@ int builtin_command(char **argv);
 
 void handlerCHLD(int sig);
 
-
 int getIndexLibre() {
     int i = 0;
     for (i = 0; i < MAXJOBS; i++)
@@ -29,35 +28,67 @@ void rmJob(int pid) {
     int i = 0;
     for (i = 0; i < MAXJOBS; i++)
         if (tabJobs[i] != NULL)
-            if (tabJobs[i]->pid == pid){
+            if (tabJobs[i]->pid == pid) {
                 free(tabJobs[i]);
                 tabJobs[i] = NULL;
             }
 }
 
-
 int getIndexJob(int pid) {
     int i = 0;
     for (i = 0; i < MAXJOBS; i++)
         if (tabJobs[i] != NULL)
-            if (tabJobs[i]->pid == pid){
+            if (tabJobs[i]->pid == pid) {
                 return i;
             }
     return -1;
 }
 
+char* getEtatJob(int index) {
+
+    switch (tabJobs[index]->etat) {
+
+        case PAUSE:
+            return "Pause";
+            break;
+
+        case FG:
+            return "En Cour d'execution (FG)";
+            break;
+
+        case BG:
+            return "En Cour d'execution (BG)";
+            break;
+
+        default:
+            return "Erreur Etat non géré";
+
+    }
+
+
+}
 
 void afficheJob(int index) {
     if (tabJobs[index] != NULL)
-        printf("[%d] \t etat: %s \t commande: %s \t pid: %d\n", index, tabJobs[index]->etat == PAUSE ? "Pause" : "En cours d'execution", tabJobs[index]->commande, tabJobs[index]->pid);
-}
-void afficheJobs() {
-        int i;
-        for (i = 0; i < MAXJOBS; i++) {
-            afficheJob(i);
-        }
+        printf("[%d] \t etat: %s \t commande: %s \t pid: %d\n", index, getEtatJob(index), tabJobs[index]->commande, tabJobs[index]->pid);
 }
 
+void afficheJobs() {
+    int i;
+    for (i = 0; i < MAXJOBS; i++) {
+        afficheJob(i);
+    }
+}
+
+int checkRunningJob() {
+    int i = 0;
+    for (i = 0; i < MAXJOBS; i++)
+        if (tabJobs[i] != NULL)
+            if (tabJobs[i]->etat != PAUSE) {
+                return 1;
+            }
+    return 0;
+}
 
 void eval(char *cmdline) {
     char *argv[MAXARGS]; // argv pour execve()
@@ -75,7 +106,7 @@ void eval(char *cmdline) {
     if (!builtin_command(argv)) { // commande integree ?
         // si oui, executee directement
         if ((pid = Fork()) == 0) { // si non, executee par un fils
-
+            setpgid(0, 0);
 
             if (execvp(argv[0], argv) < 0) {
                 printf("%s: Command not found.\n", argv[0]);
@@ -86,24 +117,15 @@ void eval(char *cmdline) {
         indexJobLibre = getIndexLibre();
         tabJobs[indexJobLibre] = malloc(sizeof (job));
         tabJobs[indexJobLibre]->pid = pid;
-        strcpy(tabJobs[indexJobLibre]->commande,argv[0]);
-        
+        strcpy(tabJobs[indexJobLibre]->commande, argv[0]);
+
 
         if (!bg) { // le pere attend fin du travail de premier plan
 
             tabJobs[indexJobLibre]->etat = FG;
-            printf("dans !bg: commande = %s\n", tabJobs[indexJobLibre]->commande );
+            printf("dans !bg: commande = %s\n", tabJobs[indexJobLibre]->commande);
             printf("getIndexFG() = %d --\n", getIndexFG());
-           
 
-            
-            while (getIndexFG() != -1) {
-                printf("verif FG = %d\n", getIndexFG());
-                afficheJobs();
-                sleep(1);
-            }
-            
-            
 
         } else { // travail d'arriere-plan, on imprime le pid
             tabJobs[indexJobLibre]->etat = BG;
@@ -111,7 +133,16 @@ void eval(char *cmdline) {
 
 
         }
+
     }
+
+    while (getIndexFG() != -1) {
+        printf("verif FG = %d\n", getIndexFG());
+        afficheJobs();
+        sleep(1);
+    }
+
+
     return;
 }
 
@@ -125,35 +156,57 @@ int builtin_command(char **argv) {
         return 1;
 
     if (!strcmp(argv[0], "jobs")) { // ignorer & tout seul
-
         printf("jobs\n");
         afficheJobs();
-
-
         return 1;
     }
 
     if (!strcmp(argv[0], "bg")) { // ignorer & tout seul
 
         printf("dans bg\n");
+        if (argv[1][0] == '%') {
+            // c'est un jobs
+            printf("c'est un jobs => %s", argv[1] + sizeof (char));
+        } else {
+            // c'est un pid
+            printf("c'est un pid => %s", argv[1]);
+        }
 
+
+        int index = atoi(argv[1]);
+
+        tabJobs[index]->etat = BG;
+        kill(tabJobs[index]->pid, SIGCONT);
         return 1;
     }
 
     if (!strcmp(argv[0], "fg")) { // ignorer & tout seul
 
         printf("dans fg\n");
-
+        int index = atoi(argv[1]);
+        tabJobs[index]->etat = FG;
+        kill(tabJobs[index]->pid, SIGCONT);
         return 1;
+
     }
 
     if (!strcmp(argv[0], "stop")) { // ignorer & tout seul
 
         printf("dans stop\n");
-
+        int index = atoi(argv[1]);
+        tabJobs[index]->etat = PAUSE;
+        kill(tabJobs[index]->pid, SIGTSTP);
         return 1;
     }
 
+    if (!strcmp(argv[0], "wait")) { // ignorer & tout seul
+
+
+        while (checkRunningJob()) {
+            sleep(1);
+        }
+
+    }
 
     return 0; // ce n'est pas une commande integree
 }
