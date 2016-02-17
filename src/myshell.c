@@ -32,31 +32,31 @@ void handlerCHLD(int sig) {
     int status;
     int i;
     pid_t pid;
-    
-    while((pid = waitpid(-1, &status, WUNTRACED | WNOHANG)) > 0) {
+
+    while ((pid = waitpid(-1, &status, WUNTRACED | WNOHANG)) > 0) {
         i = getIndexJob(pid);
-        
-        if(i == -1){
-            printf("Dans IF processus non trouve: %d\n",tabJobs[i]->pid);
+
+        if (i == -1) {
+            printf("Dans IF processus non trouve: %d\n", tabJobs[i]->pid);
             continue;
         }
-        if(WIFSIGNALED(status)){
-            printf("Dans ELSE Terminé a cause d'un signal: %d\n",tabJobs[i]->pid);
+        if (WIFSIGNALED(status)) {
+            printf("Dans ELSE Terminé a cause d'un signal: %d\n", tabJobs[i]->pid);
             rmJob(tabJobs[i]->pid);
         }
 
         if (WIFEXITED(status)) { // terminé normalement
-            printf("Dans ELSE Terminé normalement: %d\n",tabJobs[i]->pid);
+            printf("Dans ELSE Terminé normalement: %d\n", tabJobs[i]->pid);
             rmJob(tabJobs[i]->pid);
         }
 
-        if(WIFSTOPPED(status)){ // mis en pause
-            printf("Dans ELSE  Mis en pause: %d\n",tabJobs[i]->pid);
+        if (WIFSTOPPED(status)) { // mis en pause
+            printf("Dans ELSE  Mis en pause: %d\n", tabJobs[i]->pid);
             tabJobs[i]->etat = PAUSE;
         }
-            
+
     }
-    
+
 
     printf("fin handlerCHLD\n");
 }
@@ -65,7 +65,7 @@ void handlerINT(int sig) {
 
     printf("debut handlerINT\n");
     int i = getIndexFG();
-    if(i != -1){
+    if (i != -1) {
         kill(-tabJobs[i]->pid, SIGKILL);
     }
     printf("fin handlerINT\n");
